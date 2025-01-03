@@ -32,11 +32,14 @@ template <class T>
 using second_argument_type = typename std::tuple_element<
     1, typename function_traits<T>::argument_types>::type;
 
-static const std::array<fcitx::Key, 10> selectionKeys = {
+static const std::array<fcitx::Key, 20> selectionKeys = {
     fcitx::Key{FcitxKey_1}, fcitx::Key{FcitxKey_2}, fcitx::Key{FcitxKey_3},
     fcitx::Key{FcitxKey_4}, fcitx::Key{FcitxKey_5}, fcitx::Key{FcitxKey_6},
     fcitx::Key{FcitxKey_7}, fcitx::Key{FcitxKey_8}, fcitx::Key{FcitxKey_9},
-    fcitx::Key{FcitxKey_0},
+    fcitx::Key{FcitxKey_0}, fcitx::Key{FcitxKey_KP_1}, fcitx::Key{FcitxKey_KP_2},
+    fcitx::Key{FcitxKey_KP_3}, fcitx::Key{FcitxKey_KP_4}, fcitx::Key{FcitxKey_KP_5},
+    fcitx::Key{FcitxKey_KP_6}, fcitx::Key{FcitxKey_KP_7}, fcitx::Key{FcitxKey_KP_8},
+    fcitx::Key{FcitxKey_KP_9}, fcitx::Key{FcitxKey_KP_0},
 };
 
 class QuweiCandidateWord : public fcitx::CandidateWord {
@@ -187,7 +190,7 @@ void QuweiState::keyEvent(fcitx::KeyEvent &event) {
     }
 
     if (buffer_.empty()) {
-        if (!event.key().isDigit()) {
+        if (!shouldProcessKey(event.key())) {
             // if it gonna commit something
             auto c = fcitx::Key::keySymToUnicode(event.key().sym());
             if (!c) {
@@ -245,12 +248,17 @@ void QuweiState::keyEvent(fcitx::KeyEvent &event) {
             reset();
             return event.filterAndAccept();
         }
-        if (!event.key().isDigit()) {
+        if (!shouldProcessKey(event.key())) {
             return event.filterAndAccept();
         }
     }
 
-    buffer_.type(event.key().sym());
+    if (event.key().sym() >= FcitxKey_KP_0 && event.key().sym() <= FcitxKey_KP_9) {
+        buffer_.type(event.key().sym() - 65408);
+    } else {
+        buffer_.type(event.key().sym());
+    }
+
     updateUI();
     return event.filterAndAccept();
 }
@@ -296,6 +304,10 @@ QuweiEngine::QuweiEngine(fcitx::Instance *instance)
         throw std::runtime_error("Failed to create converter");
     }
     instance->inputContextManager().registerProperty("quweiState", &factory_);
+}
+
+bool QuweiState::shouldProcessKey(const fcitx::Key &key) {
+    return (key.sym() >= FcitxKey_KP_0 && key.sym() <= FcitxKey_KP_9) || key.isDigit();
 }
 
 void QuweiEngine::activate(const fcitx::InputMethodEntry &entry,

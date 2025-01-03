@@ -33,6 +33,9 @@ public:
     }
 
 private:
+    bool shouldProcessKey(const fcitx::Key &key);
+
+private:
     QuweiEngine *engine_;
     fcitx::InputContext *ic_;
     fcitx::InputBuffer buffer_{{fcitx::InputBufferOption::AsciiOnly,
